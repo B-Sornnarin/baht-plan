@@ -157,6 +157,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
   <h2>Backup</h2>
   <p class="small" style="margin-top:-4px">Your data is saved only on this device. Download a backup every week or so.</p>
   <div class="two"><button class="btn" id="backup">Download backup</button><label class="btn" style="display:grid;place-items:center">Load backup<input type="file" id="restore" accept=".json,application/json" hidden></label></div>
+  <p class="small" style="text-align:center;margin-top:24px">App version 7 · 23 Nov 2026</p>
  </section>
 </div>
 
@@ -374,6 +375,7 @@ async function shrink(f){try{const bm=await createImageBitmap(f),k=Math.min(1,16
 const TMON={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};
 const EMON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
 function slipDate(t){const pad=n=>String(n).padStart(2,'0');let y,mo,d,m;
+ t=t.replace(/[\u0E38-\u0E3A\u0E47-\u0E4E]/g,'').replace(/\s*\.\s*/g,'.');
  if(m=t.match(/(\d{1,2})\s*(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*(\d{2,4})/)){d=+m[1];mo=TMON[m[2]];y=+m[3]}
  else if(m=t.match(/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{2,4})/i)){d=+m[1];mo=EMON[m[2].toLowerCase()];y=+m[3]}
  else if(m=t.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/)){d=+m[1];mo=+m[2];y=+m[3]}
