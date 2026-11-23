@@ -100,7 +100,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .sum{background:var(--soft);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:15px}
 .sw{position:relative;overflow:hidden}
 .sw .del{position:absolute;right:0;top:1px;bottom:1px;width:92px;border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:600;cursor:pointer;font-size:15px}
-.swc{position:relative;background:var(--card);transition:transform .22s ease;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.swc{position:relative;background:var(--card);transition:transform .22s ease;touch-action:pan-y;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .swc.drag{transition:none}
 .sw .ent,.sw .crow{border-bottom:0}
 .sw:not(:last-child) .swc{border-bottom:1px solid var(--line)}
@@ -165,7 +165,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
   <h2>Backup</h2>
   <p class="small" style="margin-top:-4px">Your data is saved only on this device. Download a backup every week or so.</p>
   <div class="two"><button class="btn" id="backup">Download backup</button><label class="btn" style="display:grid;place-items:center">Load backup<input type="file" id="restore" accept=".json,application/json" hidden></label></div>
-  <p class="small" style="text-align:center;margin-top:24px">App version 8 · 23 Nov 2026</p>
+  <p class="small" style="text-align:center;margin-top:24px">App version 9 · 23 Nov 2026</p>
  </section>
 </div>
 
@@ -292,14 +292,18 @@ function render(){
 // swipe to delete
 let openRow=null,drag=null,justSwiped=false;const OPEN=-92;
 const closeRow=c=>{if(c){c.style.transform='';if(openRow===c)openRow=null}};
-document.addEventListener('pointerdown',e=>{if(e.target.closest('.del'))return;const c=e.target.closest('.swc');
- if(openRow&&openRow!==c)closeRow(openRow);if(!c)return;drag={c,x:e.clientX,y:e.clientY,base:c===openRow?OPEN:0,dir:null}});
-document.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
- if(!drag.dir){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;drag.dir=Math.abs(dx)>Math.abs(dy)?'h':'v';if(drag.dir==='h')drag.c.classList.add('drag')}
- if(drag.dir!=='h')return;const x=Math.min(0,Math.max(OPEN-30,drag.base+dx));drag.c.style.transform=`translateX(${x}px)`;drag.x2=x});
+function startDrag(t,x,y){if(t.closest('.del'))return;const c=t.closest('.swc');if(openRow&&openRow!==c)closeRow(openRow);if(!c)return;drag={c,x,y,base:c===openRow?OPEN:0,dir:null}}
+function moveDrag(x,y,ev){if(!drag)return;const dx=x-drag.x,dy=y-drag.y;
+ if(!drag.dir){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;drag.dir=Math.abs(dx)>Math.abs(dy)*1.2?'h':'v';if(drag.dir==='h')drag.c.classList.add('drag')}
+ if(drag.dir!=='h')return;if(ev&&ev.cancelable)ev.preventDefault();const v=Math.min(0,Math.max(OPEN-30,drag.base+dx));drag.c.style.transform=`translateX(${v}px)`;drag.x2=v}
 const endDrag=()=>{if(!drag)return;const {c,dir,x2}=drag;c.classList.remove('drag');
- if(dir==='h'){if((x2??0)<OPEN/2){c.style.transform=`translateX(${OPEN}px)`;openRow=c}else closeRow(c);justSwiped=true;setTimeout(()=>justSwiped=false,80)}drag=null};
-document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+ if(dir==='h'){if((x2??0)<OPEN/2){c.style.transform=`translateX(${OPEN}px)`;openRow=c}else closeRow(c);justSwiped=true;setTimeout(()=>justSwiped=false,350)}drag=null};
+document.addEventListener('touchstart',e=>{const t=e.touches[0];startDrag(e.target,t.clientX,t.clientY)},{passive:true});
+document.addEventListener('touchmove',e=>{const t=e.touches[0];moveDrag(t.clientX,t.clientY,e)},{passive:false});
+document.addEventListener('touchend',endDrag);document.addEventListener('touchcancel',endDrag);
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')startDrag(e.target,e.clientX,e.clientY)});
+document.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')moveDrag(e.clientX,e.clientY,e)});
+document.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')endDrag()});
 document.addEventListener('click',e=>{
  const d=e.target.closest('.del');if(d){const w=d.closest('.sw');openRow=null;
   if(w.dataset.k==='e')delEntry(w.dataset.id);
