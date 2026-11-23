@@ -98,6 +98,13 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .pgrid label{font-size:13px;color:var(--mute)}
 .pgrid input{margin:4px 0 0}
 .sum{background:var(--soft);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:15px}
+.sw{position:relative;overflow:hidden}
+.sw .del{position:absolute;right:0;top:1px;bottom:1px;width:92px;border:0;border-radius:12px;background:var(--red);color:#fff;font-weight:600;cursor:pointer;font-size:15px}
+.swc{position:relative;background:var(--card);transition:transform .22s ease;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.swc.drag{transition:none}
+.sw .ent,.sw .crow{border-bottom:0}
+.sw:not(:last-child) .swc{border-bottom:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){.swc{transition:none}}
 .chartcard{padding:16px;margin-bottom:12px}
 .chartcard h3{font:600 16px Prompt,Sarabun,sans-serif;margin:0 0 6px}
 .donut{display:flex;justify-content:center;margin:6px 0 10px}
@@ -129,6 +136,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
   <h2>Income · where it came from</h2><div class="card" id="incs"></div>
   <h2>Budgets</h2><div class="card" id="cats"></div>
   <div class="rowh"><h2>Recent</h2><button class="link" data-go="hist">See all</button></div>
+  <p class="small" style="margin:-6px 4px 8px">Tip: swipe an item left to delete it.</p>
   <div class="card" id="recent"></div>
   <h2>Summary · สรุป</h2>
   <div class="card chartcard"><h3>Income vs spending</h3><div class="donut" id="dIO"></div><div id="lIO"></div></div>
@@ -157,7 +165,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
   <h2>Backup</h2>
   <p class="small" style="margin-top:-4px">Your data is saved only on this device. Download a backup every week or so.</p>
   <div class="two"><button class="btn" id="backup">Download backup</button><label class="btn" style="display:grid;place-items:center">Load backup<input type="file" id="restore" accept=".json,application/json" hidden></label></div>
-  <p class="small" style="text-align:center;margin-top:24px">App version 7 · 23 Nov 2026</p>
+  <p class="small" style="text-align:center;margin-top:24px">App version 8 · 23 Nov 2026</p>
  </section>
 </div>
 
@@ -228,12 +236,14 @@ const fmt2=n=>'฿'+(+n).toLocaleString('en-US',{maximumFractionDigits:2});
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const today=()=>iso(new Date());
 const newId=()=>'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-let entries=[],settings={salary:0,save:0,budgets:{},lang:'en-US'},month=today().slice(0,7),view='home',pending=[],form={},lastDel=null;
+let entries=[],settings={salary:0,save:0,budgets:{},lang:'en-US'},month=today().slice(0,7),view='home',pending=[],form={},undoFn=null;
 
 function load(){try{const j=JSON.parse(localStorage.getItem('bahtplan2')||'null');if(j){entries=j.entries||[];settings={...settings,...(j.settings||{})}}}catch{}}
 function save(){try{localStorage.setItem('bahtplan2',JSON.stringify({entries,settings}))}catch{toast('Could not save on this device')}}
 let tt;function toast(m,undo){$('tmsg').textContent=m;$('tUndo').hidden=!undo;$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),undo?6000:2800)}
-$('tUndo').onclick=()=>{if(lastDel){entries.push(lastDel);lastDel=null;save();render();$('toast').classList.remove('on')}};
+$('tUndo').onclick=()=>{if(undoFn){undoFn();undoFn=null;save();render();$('toast').classList.remove('on')}};
+const sw=(inner,k,id,label)=>`<div class="sw" data-k="${k}" data-id="${esc(id)}"><button class="del" tabindex="-1">${label||'Delete'}</button><div class="swc">${inner}</div></div>`;
+function delEntry(id){const e=entries.find(x=>x.id===id);if(!e)return;entries=entries.filter(x=>x.id!==id);undoFn=()=>entries.push(e);save();render();toast('Deleted',true)}
 
 // navigation
 function go(v){view=v;document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
@@ -265,21 +275,39 @@ function render(){
  $('setup').style.display=settings.salary?'none':'flex';
  const by={};exp.forEach(e=>by[e.cat]=(by[e.cat]||0)+(+e.amount||0));
  $('cats').innerHTML=CATS.map(([id])=>{const c=CAT[id],b=+settings.budgets[id]||0,sp=by[id]||0;if(!b&&!sp)return'';const over=b&&sp>b;
-  return `<div class="crow"><span class="ic" style="background:${c.col}22">${c.ic}</span><div class="cmid"><div class="cname"><span>${c.en}</span><span class="num">${fmt(sp)}${b?` <span class="small">/ ${fmt(b)}</span>`:''}</span></div>
+  const row=`<div class="crow"><span class="ic" style="background:${c.col}22">${c.ic}</span><div class="cmid"><div class="cname"><span>${c.en}</span><span class="num">${fmt(sp)}${b?` <span class="small">/ ${fmt(b)}</span>`:''}</span></div>
   <div class="bar"><i style="width:${b?Math.min(sp/b,1)*100:100}%;background:${over?'var(--red)':c.col}"></i></div>
-  <div class="small ${over?'over':''}">${b?(over?fmt(sp-b)+' over':fmt(b-sp)+' left'):'No budget'}</div></div></div>`}).join('')||'<p class="empty">No budgets yet. Tap <b>Plan</b> below to set them.</p>';
+  <div class="small ${over?'over':''}">${b?(over?fmt(sp-b)+' over':fmt(b-sp)+' left'):'No budget'}</div></div></div>`;return b?sw(row,'b',id,'Remove'):row}).join('')||'<p class="empty">No budgets yet. Tap <b>Plan</b> below to set them.</p>';
  const ib={};incs.forEach(e=>{const k=incOf(e).id;ib[k]=(ib[k]||0)+(+e.amount||0)});
  const irows=(planSal?[`<div class="crow"><span class="ic" style="background:#137a4c22">💼</span><div class="cmid"><div class="cname"><span>Salary <span class="small">(planned)</span></span><span class="num">${fmt(planSal)}</span></div><div class="small">From your plan · add it as income on pay day to record the real amount</div></div></div>`]:[])
   .concat(INCS.filter(c=>ib[c[0]]).map(([id])=>{const c=INC_[id];return `<div class="crow"><span class="ic" style="background:${c.col}22">${c.ic}</span><div class="cmid"><div class="cname"><span>${c.en}</span><span class="num gain">+${fmt(ib[id])}</span></div><div class="small">${c.th} · ${incs.filter(e=>incOf(e).id===id).length} time(s) · ${pct(ib[id],income)} of income</div></div></div>`}));
  $('incs').innerHTML=irows.join('')||'<p class="empty">No income yet. Tap <b>+</b> then <b>Income</b>.</p>';
  renderCharts(income,spent,sv,left,by);
- $('recent').innerHTML=inM.slice(0,5).map(entRow).join('')||'<p class="empty">Nothing yet. Tap <b>+</b> to add your first spending.</p>';
+ $('recent').innerHTML=inM.slice(0,5).map(e=>sw(entRow(e),'e',e.id)).join('')||'<p class="empty">Nothing yet. Tap <b>+</b> to add your first spending.</p>';
  const days=[...new Set(inM.map(e=>e.date))];
  $('list').innerHTML=days.map(d=>{const its=inM.filter(e=>e.date===d),sp=its.filter(e=>e.type!=='income').reduce((a,e)=>a+(+e.amount||0),0);
-  return `<div class="day">${d===t?'Today':new Date(d+'T12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})} · spent ${fmt(sp)}</div><div class="card">${its.map(entRow).join('')}</div>`}).join('')||'<div class="card"><p class="empty">No entries this month.</p></div>';
+  return `<div class="day">${d===t?'Today':new Date(d+'T12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})} · spent ${fmt(sp)}</div><div class="card">${its.map(e=>sw(entRow(e),'e',e.id)).join('')}</div>`}).join('')||'<div class="card"><p class="empty">No entries this month.</p></div>';
  if(view==='plan')renderPlan();
 }
-document.addEventListener('click',e=>{const b=e.target.closest('.ent');if(b)openForm(entries.find(x=>x.id===b.dataset.id))});
+// swipe to delete
+let openRow=null,drag=null,justSwiped=false;const OPEN=-92;
+const closeRow=c=>{if(c){c.style.transform='';if(openRow===c)openRow=null}};
+document.addEventListener('pointerdown',e=>{if(e.target.closest('.del'))return;const c=e.target.closest('.swc');
+ if(openRow&&openRow!==c)closeRow(openRow);if(!c)return;drag={c,x:e.clientX,y:e.clientY,base:c===openRow?OPEN:0,dir:null}});
+document.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+ if(!drag.dir){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;drag.dir=Math.abs(dx)>Math.abs(dy)?'h':'v';if(drag.dir==='h')drag.c.classList.add('drag')}
+ if(drag.dir!=='h')return;const x=Math.min(0,Math.max(OPEN-30,drag.base+dx));drag.c.style.transform=`translateX(${x}px)`;drag.x2=x});
+const endDrag=()=>{if(!drag)return;const {c,dir,x2}=drag;c.classList.remove('drag');
+ if(dir==='h'){if((x2??0)<OPEN/2){c.style.transform=`translateX(${OPEN}px)`;openRow=c}else closeRow(c);justSwiped=true;setTimeout(()=>justSwiped=false,80)}drag=null};
+document.addEventListener('pointerup',endDrag);document.addEventListener('pointercancel',endDrag);
+document.addEventListener('click',e=>{
+ const d=e.target.closest('.del');if(d){const w=d.closest('.sw');openRow=null;
+  if(w.dataset.k==='e')delEntry(w.dataset.id);
+  else{const id=w.dataset.id,old=+settings.budgets[id]||0;settings.budgets={...settings.budgets,[id]:0};undoFn=()=>{settings.budgets={...settings.budgets,[id]:old}};save();render();toast(CAT[id].en+' budget removed',true)}
+  return}
+ if(justSwiped){e.preventDefault();return}
+ const c=e.target.closest('.swc');if(c&&c===openRow){closeRow(c);return}
+ const b=e.target.closest('.ent');if(b)openForm(entries.find(x=>x.id===b.dataset.id))});
 
 // charts
 function donut(segs,big,small){const r=70,C=2*Math.PI*r,tot=segs.reduce((a,x)=>a+x.v,0)||1;let acc=0;
@@ -334,7 +362,7 @@ $('fOk').onclick=()=>{const a=parseFloat(String($('fAmt').value).replace(/,/g,''
  const e={id:form.id||newId(),type:form.type,amount:a,cat:form.cat,note:$('fNote').value.trim(),date:$('fDate').value||today(),ts:form.ts||Date.now()};
  entries=entries.filter(x=>x.id!==e.id).concat(e);save();closeSheets();render();toast(form.id?'Updated':`Saved ${fmt2(a)}`)};
 $('fAmt').onkeydown=e=>{if(e.key==='Enter')$('fOk').click()};
-$('fDel').onclick=()=>{const e=entries.find(x=>x.id===form.id);if(!e)return;entries=entries.filter(x=>x.id!==e.id);lastDel=e;save();closeSheets();render();toast('Deleted',true)};
+$('fDel').onclick=()=>{const e=entries.find(x=>x.id===form.id);if(!e)return;closeSheets();delEntry(e.id);return;render();toast('Deleted',true)};
 
 // quick add (typing)
 function guessCat(t){t=t.toLowerCase();for(const [c,ws] of Object.entries(KW))if(ws.some(w=>t.includes(w)))return c;return 'other'}
