@@ -93,7 +93,7 @@ h2{font-size:18px;margin:26px 0 10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .pi{display:grid;grid-template-columns:96px minmax(0,1fr) 40px;gap:8px;align-items:center;margin-bottom:6px}
-.pi .fld{margin:0}.pi .note{grid-column:1/3}
+.pi .fld{margin:0}.pi .note{grid-column:1/4}.pi{border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pgrid label{font-size:13px;color:var(--mute)}
 .pgrid input{margin:4px 0 0}
@@ -186,7 +186,7 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 {
 const CATS=[['food','Food & meals','อาหาร','🍜','#e8772e'],['drinks','Drinks & party','เหล้า/ปาร์ตี้','🍻','#d1346b'],['transport','Transport','เดินทาง','🚕','#1b9aaa'],['care','Cream & care','ครีม/ของใช้','🧴','#e05fb0'],
  ['clothes','Clothes','เสื้อผ้า','👕','#8c6bd6'],['net','Internet & phone','เน็ต/มือถือ','📶','#3d5afe'],['rent','Rent','ค่าเช่า','🏠','#7b3fa0'],['bills','Water & power','ค่าน้ำ-ไฟ','💡','#2f7ed8'],
- ['family','Family','ครอบครัว','👪','#c0841a'],['health','Health','สุขภาพ','💊','#18a06b'],['fun','Fun & subs','บันเทิง','🎬','#f2545b'],['merit','Merit / temple','ทำบุญ','🙏','#d4a017'],
+ ['family','Family','ครอบครัว','👪','#c0841a'],['transfer','Transfers','โอนให้คนอื่น','💸','#5a6acf'],['health','Health','สุขภาพ','💊','#18a06b'],['fun','Fun & subs','บันเทิง','🎬','#f2545b'],['merit','Merit / temple','ทำบุญ','🙏','#d4a017'],
  ['home','Household','ของใช้บ้าน','🧺','#6d7f8c'],['other','Other','อื่นๆ','📦','#9a8aa3']];
 const CAT=Object.fromEntries(CATS.map(c=>[c[0],{id:c[0],en:c[1],th:c[2],ic:c[3],col:c[4]}]));
 const KW={food:['ข้าว','กิน','อาหาร','ก๋วยเตี๋ยว','ส้มตำ','กาแฟ','ชา','ขนม','meal','lunch','dinner','breakfast','food','coffee','noodle','snack','7-11','เซเว่น','ผัด','หมู','ไก่','grabfood','lineman','rice','tea','cafe'],
@@ -196,7 +196,7 @@ const KW={food:['ข้าว','กิน','อาหาร','ก๋วยเต
  clothes:['เสื้อ','กางเกง','รองเท้า','กระโปรง','shirt','pants','shoes','dress','clothes','jeans','jacket'],
  net:['เน็ต','internet','wifi','ais','true','dtac','3bb','โทรศัพท์','มือถือ','phone','sim','ซิม','top up','เติมเงิน'],
  rent:['ค่าเช่า','ค่าห้อง','คอนโด','rent','condo','apartment','room'],bills:['ค่าไฟ','ค่าน้ำ','electric','electricity','power','water bill'],
- family:['แม่','พ่อ','ครอบครัว','ยาย','family','mom','mum','dad','parents'],
+ family:['แม่','พ่อ','ครอบครัว','ยาย','family','mom','mum','dad','parents'],transfer:['โอนให้','โอนเงิน','transfer','sent to','send to','promptpay','พร้อมเพย์'],
  health:['ยา','หมอ','โรงพยาบาล','คลินิก','ฟิตเนส','ประกัน','doctor','hospital','clinic','medicine','gym','insurance','dentist','ทำฟัน','pharmacy'],
  fun:['netflix','spotify','youtube','หนัง','คอนเสิร์ต','movie','cinema','concert','game','เกม','disney','ticket'],
  merit:['ทำบุญ','วัด','ใส่บาตร','บริจาค','temple','merit','donate','monk'],
@@ -316,9 +316,9 @@ $('addBtn').onclick=()=>$('smart').value.trim()?quick():openForm();
 const catOpts=sel=>`<optgroup label="Spending">${CATS.map(c=>`<option value="${c[0]}" ${sel===c[0]?'selected':''}>${c[3]} ${c[1]}</option>`).join('')}</optgroup><optgroup label="Income from">${INCS.map(c=>`<option value="i:${c[0]}" ${sel==='i:'+c[0]?'selected':''}>${c[3]} ${c[1]}</option>`).join('')}</optgroup>`;
 function showPending(items){pending=items;drawPending();$('pSheet').classList.add('on')}
 function drawPending(){if(!pending.length){closeSheets();return}
- $('plist').innerHTML=pending.map((p,k)=>`<div class="pi" data-k="${k}"><input class="fld" inputmode="decimal" value="${p.amount}" data-f="amount" aria-label="Amount"><select class="fld" data-f="cat" aria-label="Category">${catOpts(p.type==='income'?'i:'+p.cat:p.cat)}</select><button class="x" data-x="${k}" aria-label="Remove">×</button><input class="fld note" value="${esc(p.note)}" placeholder="Note" data-f="note" aria-label="Note"></div>`).join('')}
+ $('plist').innerHTML=pending.map((p,k)=>`<div class="pi" data-k="${k}"><input class="fld" inputmode="decimal" value="${p.amount}" data-f="amount" aria-label="Amount"><select class="fld" data-f="cat" aria-label="Category">${catOpts(p.type==='income'?'i:'+p.cat:p.cat)}</select><button class="x" data-x="${k}" aria-label="Remove">×</button><input class="fld note" value="${esc(p.note)}" placeholder="Note" data-f="note" aria-label="Note"><input class="fld note" type="date" value="${p.date}" data-f="date" aria-label="Date"></div>`).join('')}
 $('plist').oninput=$('plist').onchange=e=>{const r=e.target.closest('.pi');if(!r)return;const p=pending[r.dataset.k],f=e.target.dataset.f,v=e.target.value;
- if(f==='amount')p.amount=parseFloat(v.replace(/,/g,''))||0;else if(f==='note')p.note=v;else if(v.startsWith('i:')){p.type='income';p.cat=v.slice(2)}else{p.type='expense';p.cat=v}};
+ if(f==='amount')p.amount=parseFloat(v.replace(/,/g,''))||0;else if(f==='note')p.note=v;else if(f==='date')p.date=v||today();else if(v.startsWith('i:')){p.type='income';p.cat=v.slice(2)}else{p.type='expense';p.cat=v}};
 $('plist').onclick=e=>{const x=e.target.dataset.x;if(x!==undefined){pending.splice(+x,1);drawPending()}};
 $('pOk').onclick=()=>{const ok=pending.filter(p=>p.amount>0);ok.forEach((p,i)=>entries.push({id:newId()+i,type:p.type,amount:p.amount,cat:p.cat,note:p.note,date:p.date,ts:Date.now()+i}));
  pending=[];save();closeSheets();render();toast(`Saved ${ok.length} item${ok.length===1?'':'s'}`)};
@@ -334,12 +334,41 @@ $('mic').onclick=()=>{if(rec){rec.stop();return}
  try{rec.start();$('mic').classList.add('rec');toast('Listening… tap the mic again to stop')}catch{rec=null}};
 
 // receipt photo
-let tessP=null;const loadTess=()=>tessP||(tessP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';s.onload=ok;s.onerror=()=>{tessP=null;no()};document.head.appendChild(s)}));
+let tessP=null;const loadTess=()=>window.Tesseract?Promise.resolve():tessP||(tessP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';s.onload=ok;s.onerror=()=>{tessP=null;no()};document.head.appendChild(s)}));
 async function shrink(f){try{const bm=await createImageBitmap(f),k=Math.min(1,1600/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=bm.width*k;c.height=bm.height*k;c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,'image/jpeg',.85))}catch{return f}}
-function readReceipt(text){const lines=text.split('\n').map(l=>l.trim()).filter(Boolean),nums=l=>(l.match(/\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?/g)||[]).map(x=>parseFloat(x.replace(/,/g,''))).filter(n=>n>0&&n<1e6);
- let total=0;for(const l of lines)if(/total|รวม|สุทธิ|ทั้งสิ้น|grand|amount|ยอด|ชำระ/i.test(l)){const n=nums(l);if(n.length)total=Math.max(total,n[n.length-1])}
- if(!total){const all=lines.flatMap(l=>/\d{2}[\/:-]\d{2}/.test(l)?[]:nums(l));total=all.length?Math.max(...all):0}
- return total?[{type:'expense',amount:total,cat:guessCat(text),note:(lines.find(l=>/[a-zA-Zก-๙]{3}/.test(l))||'Receipt').slice(0,40),date:today()}]:[]}
+// RECEIPT-START
+const TMON={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};
+const EMON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function slipDate(t){const pad=n=>String(n).padStart(2,'0');let y,mo,d,m;
+ if(m=t.match(/(\d{1,2})\s*(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*(\d{2,4})/)){d=+m[1];mo=TMON[m[2]];y=+m[3]}
+ else if(m=t.match(/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{2,4})/i)){d=+m[1];mo=EMON[m[2].toLowerCase()];y=+m[3]}
+ else if(m=t.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/)){d=+m[1];mo=+m[2];y=+m[3]}
+ else return null;
+ if(y<100)y=y>=60?2500+y:2000+y;if(y>2400)y-=543;
+ const out=`${y}-${pad(mo)}-${pad(d)}`,dt=new Date(out+'T12:00'),now=Date.now();
+ if(isNaN(dt)||mo>12||d>31||dt-now>864e5*2||now-dt>864e5*400)return null;return out}
+function readReceipt(raw){
+ const text=raw.replace(/ํา/g,'ำ').replace(/ํ/g,'ำ');
+ const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+ const skip=l=>/x{2,}|\*{2,}|รหัสอ้างอิง|อ้างอิง|ref|เลขที่|transaction id|ค่าธรรมเนียม|fee|โทร|tel|vat\s*id|tax\s*id/i.test(l);
+ const money=l=>(l.replace(/\d{1,2}:\d{2}(:\d{2})?/g,'').match(/\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2}\b|\b\d{1,6}\b/g)||[]).map(x=>({v:parseFloat(x.replace(/,/g,'')),dec:/\.\d{2}$/.test(x)})).filter(n=>n.v>0&&n.v<1e6);
+ const amountKW=/จำนวนเงิน|จำนวน|ยอดเงิน|ยอดโอน|ยอดชำระ|ยอดรวม|รวมทั้งสิ้น|สุทธิ|ทั้งสิ้น|amount|total|grand|รวม/i;
+ let total=0;
+ for(let i=0;i<lines.length&&!total;i++){if(!amountKW.test(lines[i])||skip(lines[i]))continue;
+  const here=money(lines[i].replace(/^\D*?(จำนวนเงิน|amount|total)/i,'')),next=lines[i+1]&&!skip(lines[i+1])?money(lines[i+1]):[];
+  const pick=here.find(n=>n.dec)||next.find(n=>n.dec)||here[here.length-1]||next[0];if(pick)total=pick.v}
+ if(!total){const all=lines.filter(l=>!skip(l)&&!/\d{1,2}\s*(ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|\d+\/\d+\/\d+/i.test(l)).flatMap(money);
+  const dec=all.filter(n=>n.dec);total=(dec.length?Math.max(...dec.map(n=>n.v)):all.length?Math.max(...all.map(n=>n.v)):0)}
+ if(!total)return[];
+ const isSlip=/โอนเงิน|โอนสำเร็จ|ชำระเงินสำเร็จ|transfer|พร้อมเพย์|promptpay|scb|kbank|k plus|กสิกร|krungthai|กรุงไทย|กรุงเทพ|bangkok bank|ttb|กรุงศรี|krungsri|ออมสิน|gsb|true\s*money/i.test(text);
+ const date=slipDate(text)||today();
+ if(isSlip){const ppl=lines.filter(l=>/(น\.ส\.|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|\bmr\.?|\bms\.?|\bmrs\.?|\bmiss)\s*\S/i.test(l)&&!skip(l)).map(l=>l.replace(/^[^ก-๙A-Za-z]+/,'').trim());
+  const toIdx=lines.findIndex(l=>/^(ไปยัง|ถึง|to)\b/i.test(l));const shopL=lines.find(l=>/^(ร้าน|shop|store|บริษัท|บจก)/i.test(l));let who=ppl.length>1?ppl[1]:(shopL||ppl[0]);
+  if(!who&&toIdx>=0)who=(lines[toIdx].replace(/^(ไปยัง|ถึง|to)\s*/i,'')||lines[toIdx+1]||'').trim();
+  return[{type:'expense',amount:total,cat:'transfer',note:who?('Transfer to '+who).slice(0,60):'Bank transfer',date}]}
+ const shop=(lines.find(l=>/[a-zA-Zก-๙]{3}/.test(l)&&!/(january|february|march|april|may|june|july|august|september|october|november|december|\b(am|pm)\b)/i.test(l))||'Receipt').slice(0,40);
+ return[{type:'expense',amount:total,cat:guessCat(text),note:shop,date}]}
+// RECEIPT-END
 $('photo').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;toast('Reading receipt… this can take a moment');
  try{await loadTess();const r=await Tesseract.recognize(await shrink(f),'tha+eng');const items=readReceipt(r.data.text||'');
   if(items.length){showPending(items);toast('Check the amount, then save')}else toast('No total found — tap + to add it')}catch{toast('Receipt reading needs internet')}};
