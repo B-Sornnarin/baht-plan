@@ -98,6 +98,14 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .pgrid label{font-size:13px;color:var(--mute)}
 .pgrid input{margin:4px 0 0}
 .sum{background:var(--soft);border-radius:14px;padding:12px 14px;margin:14px 0;font-size:15px}
+.chartcard{padding:16px;margin-bottom:12px}
+.chartcard h3{font:600 16px Prompt,Sarabun,sans-serif;margin:0 0 6px}
+.donut{display:flex;justify-content:center;margin:6px 0 10px}
+.donut svg{width:190px;height:190px}
+.lg{display:grid;grid-template-columns:14px minmax(0,1fr) auto 52px;gap:4px 10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+.lg:last-child{border-bottom:0}
+.lg i{width:12px;height:12px;border-radius:4px}
+.lg .pc{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d1222;color:#fff;padding:12px 16px;border-radius:14px;display:none;gap:14px;align-items:center;z-index:20;max-width:92vw}
 .toast.on{display:flex}.toast button{background:none;border:0;color:var(--mango);font-weight:600;cursor:pointer;min-height:36px}
 .spin{display:inline-block;width:18px;height:18px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp 1s linear infinite}
@@ -122,6 +130,9 @@ label.l{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
   <h2>Budgets</h2><div class="card" id="cats"></div>
   <div class="rowh"><h2>Recent</h2><button class="link" data-go="hist">See all</button></div>
   <div class="card" id="recent"></div>
+  <h2>Summary · สรุป</h2>
+  <div class="card chartcard"><h3>Income vs spending</h3><div class="donut" id="dIO"></div><div id="lIO"></div></div>
+  <div class="card chartcard"><h3>Where your money went</h3><div class="donut" id="dCat"></div><div id="lCat"></div></div>
  </section>
 
  <section class="view" id="v-hist">
@@ -258,8 +269,9 @@ function render(){
   <div class="small ${over?'over':''}">${b?(over?fmt(sp-b)+' over':fmt(b-sp)+' left'):'No budget'}</div></div></div>`}).join('')||'<p class="empty">No budgets yet. Tap <b>Plan</b> below to set them.</p>';
  const ib={};incs.forEach(e=>{const k=incOf(e).id;ib[k]=(ib[k]||0)+(+e.amount||0)});
  const irows=(planSal?[`<div class="crow"><span class="ic" style="background:#137a4c22">💼</span><div class="cmid"><div class="cname"><span>Salary <span class="small">(planned)</span></span><span class="num">${fmt(planSal)}</span></div><div class="small">From your plan · add it as income on pay day to record the real amount</div></div></div>`]:[])
-  .concat(INCS.filter(c=>ib[c[0]]).map(([id])=>{const c=INC_[id];return `<div class="crow"><span class="ic" style="background:${c.col}22">${c.ic}</span><div class="cmid"><div class="cname"><span>${c.en}</span><span class="num gain">+${fmt(ib[id])}</span></div><div class="small">${c.th} · ${incs.filter(e=>incOf(e).id===id).length} time(s)</div></div></div>`}));
+  .concat(INCS.filter(c=>ib[c[0]]).map(([id])=>{const c=INC_[id];return `<div class="crow"><span class="ic" style="background:${c.col}22">${c.ic}</span><div class="cmid"><div class="cname"><span>${c.en}</span><span class="num gain">+${fmt(ib[id])}</span></div><div class="small">${c.th} · ${incs.filter(e=>incOf(e).id===id).length} time(s) · ${pct(ib[id],income)} of income</div></div></div>`}));
  $('incs').innerHTML=irows.join('')||'<p class="empty">No income yet. Tap <b>+</b> then <b>Income</b>.</p>';
+ renderCharts(income,spent,sv,left,by);
  $('recent').innerHTML=inM.slice(0,5).map(entRow).join('')||'<p class="empty">Nothing yet. Tap <b>+</b> to add your first spending.</p>';
  const days=[...new Set(inM.map(e=>e.date))];
  $('list').innerHTML=days.map(d=>{const its=inM.filter(e=>e.date===d),sp=its.filter(e=>e.type!=='income').reduce((a,e)=>a+(+e.amount||0),0);
@@ -267,6 +279,28 @@ function render(){
  if(view==='plan')renderPlan();
 }
 document.addEventListener('click',e=>{const b=e.target.closest('.ent');if(b)openForm(entries.find(x=>x.id===b.dataset.id))});
+
+// charts
+function donut(segs,big,small){const r=70,C=2*Math.PI*r,tot=segs.reduce((a,x)=>a+x.v,0)||1;let acc=0;
+ const arcs=segs.filter(x=>x.v>0).map(x=>{const len=x.v/tot*C,gap=segs.filter(y=>y.v>0).length>1?2:0;
+  const el=`<circle r="${r}" cx="95" cy="95" fill="none" stroke="${x.c}" stroke-width="24" stroke-dasharray="${Math.max(len-gap,0.01)} ${C}" stroke-dashoffset="${-acc}" transform="rotate(-90 95 95)"/>`;acc+=len;return el}).join('');
+ return `<svg viewBox="0 0 190 190" role="img" aria-label="${esc(big)} ${esc(small)}"><circle r="${r}" cx="95" cy="95" fill="none" stroke="var(--soft)" stroke-width="24"/>${arcs}
+ <text x="95" y="93" text-anchor="middle" font-family="Prompt,Sarabun,sans-serif" font-weight="600" font-size="26" fill="currentColor">${esc(big)}</text>
+ <text x="95" y="116" text-anchor="middle" font-size="13" fill="var(--mute)">${esc(small)}</text></svg>`}
+const pct=(v,t)=>t?Math.round(v/t*100)+'%':'–';
+const lgRow=(c,name,v,t)=>`<div class="lg"><i style="background:${c}"></i><span>${name}</span><span class="num">${fmt(v)}</span><span class="pc">${pct(v,t)}</span></div>`;
+function renderCharts(income,spent,sv,left,by){
+ if(!income&&!spent){$('dIO').innerHTML='';$('lIO').innerHTML='<p class="empty">Add your salary or income to see this chart.</p>'}
+ else{const over=left<0,base=Math.max(income,spent+sv);
+  const segs=[{v:spent,c:over?'var(--red)':'#8e44ad'},{v:sv,c:'#ffb81c'},{v:Math.max(left,0),c:'#2fb67c'}];
+  $('dIO').innerHTML=donut(segs,income?pct(spent,income):'–','of income spent');
+  $('lIO').innerHTML=lgRow('#8e44ad','Spent · รายจ่าย',spent,income)+lgRow('#ffb81c','Savings goal · เงินออม',sv,income)+
+   (over?`<div class="lg"><i style="background:var(--red)"></i><span class="over">Over your income</span><span class="num over">${fmt(-left)}</span><span class="pc over">${pct(-left,income)}</span></div>`:lgRow('#2fb67c','Left · คงเหลือ',left,income))+
+   `<div class="lg"><i style="background:transparent"></i><b>Income · รายรับ</b><b class="num">${fmt(income)}</b><span class="pc">100%</span></div>`}
+ const cats=CATS.map(([id])=>({id,v:by[id]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+ if(!cats.length){$('dCat').innerHTML='';$('lCat').innerHTML='<p class="empty">No spending yet this month.</p>';return}
+ $('dCat').innerHTML=donut(cats.map(x=>({v:x.v,c:CAT[x.id].col})),fmt(spent),'spent this month');
+ $('lCat').innerHTML=cats.map(x=>lgRow(CAT[x.id].col,`${CAT[x.id].ic} ${CAT[x.id].en}`,x.v,spent)).join('')}
 
 // plan
 function renderPlan(){if(document.activeElement?.closest?.('#v-plan'))return;
@@ -362,16 +396,20 @@ function readReceipt(raw){
  if(!total)return[];
  const isSlip=/โอนเงิน|โอนสำเร็จ|ชำระเงินสำเร็จ|transfer|พร้อมเพย์|promptpay|scb|kbank|k plus|กสิกร|krungthai|กรุงไทย|กรุงเทพ|bangkok bank|ttb|กรุงศรี|krungsri|ออมสิน|gsb|true\s*money/i.test(text);
  const date=slipDate(text)||today();
- if(isSlip){const ppl=lines.filter(l=>/(น\.ส\.|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|\bmr\.?|\bms\.?|\bmrs\.?|\bmiss)\s*\S/i.test(l)&&!skip(l)).map(l=>l.replace(/^[^ก-๙A-Za-z]+/,'').trim());
-  const toIdx=lines.findIndex(l=>/^(ไปยัง|ถึง|to)\b/i.test(l));const shopL=lines.find(l=>/^(ร้าน|shop|store|บริษัท|บจก)/i.test(l));let who=ppl.length>1?ppl[1]:(shopL||ppl[0]);
-  if(!who&&toIdx>=0)who=(lines[toIdx].replace(/^(ไปยัง|ถึง|to)\s*/i,'')||lines[toIdx+1]||'').trim();
-  return[{type:'expense',amount:total,cat:'transfer',note:who?('Transfer to '+who).slice(0,60):'Bank transfer',date}]}
- const shop=(lines.find(l=>/[a-zA-Zก-๙]{3}/.test(l)&&!/(january|february|march|april|may|june|july|august|september|october|november|december|\b(am|pm)\b)/i.test(l))||'Receipt').slice(0,40);
- return[{type:'expense',amount:total,cat:guessCat(text),note:shop,date}]}
+ if(isSlip){const ppl=lines.filter(l=>/(น\.ส\.|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|\bmr\.?|\bms\.?|\bmrs\.?|\bmiss)\s*\S/i.test(l)&&!skip(l)).map(l=>l.replace(/^[^ก-๙A-Za-z]+/,'').replace(/^(ไปยัง|ถึง|to)\s*/i,'').trim());
+  const toIdx=lines.findIndex(l=>/^(ไปยัง|ถึง|to)(\s|:|$)/i.test(l)),shopL=lines.find(l=>/^(ร้าน|shop|store|บริษัท|บจก)/i.test(l));
+  let who=toIdx>=0?lines[toIdx].replace(/^(ไปยัง|ถึง|to)\s*:?\s*/i,'').replace(/^[^ก-๙A-Za-z]+/,'').trim():'';
+  if(!/[ก-๙A-Za-z]{2}/.test(who)){const hon=/(น\.ส\.|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|\bmr\.?|\bms\.?|\bmrs\.?|\bmiss)\s*\S/i,acct=l=>/x{2,}|\*{2,}/i.test(l);
+   const pIdx=lines.map((l,i)=>hon.test(l)&&!skip(l)?i:-1).filter(i=>i>=0),firstAcct=lines.findIndex(acct);
+   const after=pIdx.find(i=>firstAcct>=0&&i>firstAcct);
+   who=after!==undefined?lines[after].replace(/^[^ก-๙A-Za-z]+/,'').replace(/^(ไปยัง|ถึง|to)\s*:?\s*/i,'').trim():ppl.length>1?ppl[1]:(shopL||(firstAcct>=0&&lines[firstAcct+1]&&!acct(lines[firstAcct+1])&&/[ก-๙A-Za-z]{3}/.test(lines[firstAcct+1])&&!amountKW.test(lines[firstAcct+1])?lines[firstAcct+1]:''))}
+  return[{type:'expense',amount:total,cat:'transfer',note:who.replace(/\s+/g,' ').slice(0,60),date}]}
+
+ return[{type:'expense',amount:total,cat:guessCat(text),note:'',date}]}
 // RECEIPT-END
 $('photo').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;toast('Reading receipt… this can take a moment');
  try{await loadTess();const r=await Tesseract.recognize(await shrink(f),'tha+eng');const items=readReceipt(r.data.text||'');
-  if(items.length){showPending(items);toast('Check the amount, then save')}else toast('No total found — tap + to add it')}catch{toast('Receipt reading needs internet')}};
+  if(items.length){showPending(items);toast('Check the amount, add a note if you like, then save')}else toast('No total found — tap + to add it')}catch{toast('Receipt reading needs internet')}};
 
 // files
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
